@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: cybersentinel
+      POSTGRES_PASSWORD: cybersentinel
+      POSTGRES_DB: cybersentinel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://cybersentinel:cybersentinel@postgres:5432/cybersentinel
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_HOST=postgres
+    depends_on:
+      - postgres
+      - redis
+
+  worker:
+    build: .
+    command: celery -A app.workers.celery_app worker --loglevel=info
+    volumes:
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://cybersentinel:cybersentinel@postgres:5432/cybersentinel
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_HOST=postgres
+    depends_on:
+      - postgres
+      - redis
+      - backend
+
+volumes:
+  postgres_data:
