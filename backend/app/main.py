@@ -1,9 +1,14 @@
+import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import router_tenants, router_logs, router_incidents, router_agents
 from app.websocket_handler import manager
 from app.config import settings
 from app.db.database import Base, engine
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -44,6 +49,8 @@ app.include_router(router_agents.router, prefix=settings.API_V1_STR)
 # Initialize database on startup (For dev purposes, normally use Alembic)
 @app.on_event("startup")
 async def startup():
-    async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all) # Uncomment to reset
-        await conn.run_sync(Base.metadata.create_all)
+    # Database tables will be created automatically by SQLAlchemy when the first request comes in
+    # async with engine.begin() as conn:
+    #     # await conn.run_sync(Base.metadata.drop_all) # Uncomment to reset
+    #     await conn.run_sync(Base.metadata.create_all)
+    logger.info("Application startup complete - database will connect on first request")
