@@ -7,9 +7,10 @@ interface DashboardProps {
   incidents: Incident[];
   loading: boolean;
   onIngestClick: () => void;
+  onNewTenantClick: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ incidents, loading, onIngestClick }) => {
+const Dashboard: React.FC<DashboardProps> = ({ incidents, loading, onIngestClick, onNewTenantClick }) => {
   const navigate = useNavigate();
 
   const stats = [
@@ -34,7 +35,10 @@ const Dashboard: React.FC<DashboardProps> = ({ incidents, loading, onIngestClick
             <Database className="w-4 h-4" />
             Ingest Log
           </button>
-          <button className="btn-primary flex items-center gap-2">
+          <button 
+            className="btn-primary flex items-center gap-2"
+            onClick={onNewTenantClick}
+          >
             <Plus className="w-4 h-4" />
             New Tenant
           </button>
@@ -57,7 +61,12 @@ const Dashboard: React.FC<DashboardProps> = ({ incidents, loading, onIngestClick
       <div className="card overflow-hidden">
         <div className="p-4 border-b border-card-border flex items-center justify-between bg-white/[0.02]">
           <h2 className="font-semibold">Recent Incidents</h2>
-          <button className="text-xs text-primary hover:underline">View all</button>
+          <button 
+            className="text-xs text-primary hover:underline"
+            onClick={() => navigate('/incidents')}
+          >
+            View all
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left">

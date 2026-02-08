@@ -37,6 +37,9 @@ export const api = {
   ingestLog: (tenantId: string, logData: IngestLogRequest) => 
     apiClient.post(`/api/tenants/${tenantId}/logs`, logData).then(res => res.data),
 
+  ingestRawLog: (logData: any) =>
+    apiClient.post('/api/logs/ingest', logData).then(res => res.data),
+
   analyzeIncident: (data: AnalyzeIncidentRequest) => 
     apiClient.post<AnalyzeIncidentResponse>('/api/incidents/analyze', data).then(res => res.data),
 

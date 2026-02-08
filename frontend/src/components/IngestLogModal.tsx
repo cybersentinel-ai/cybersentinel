@@ -9,44 +9,69 @@ interface IngestLogModalProps {
 }
 
 const IngestLogModal: React.FC<IngestLogModalProps> = ({ isOpen, onClose }) => {
-  const [logContent, setLogContent] = useState('');
+  const [formData, setFormData] = useState({
+    log_message: '',
+    source: 'firewall',
+    severity: 'medium',
+    timestamp: new Date().toISOString().slice(0, 16)
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalyzeIncidentResponse | null>(null);
+  const [success, setSuccess] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleAnalyze = async () => {
-    if (!logContent.trim()) return;
-
+  const handleIngest = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setResult(null);
+    setSuccess(false);
 
     try {
-      const response = await api.analyzeIncident({
+      // First ingest the log
+      await api.ingestRawLog({
+        tenant_id: "123e4567-e89b-12d3-a561-426614174000", // Mock tenant ID
+        source: formData.source,
+        event_type: "log_ingestion",
+        payload: {
+          message: formData.log_message,
+          severity: formData.severity,
+          original_timestamp: formData.timestamp
+        }
+      });
+
+      // Then analyze (optional but good for UX if we want to show immediate AI reaction)
+      const analysis = await api.analyzeIncident({
         tenant_id: "123e4567-e89b-12d3-a561-426614174000",
         events: [
           {
-            timestamp: new Date().toISOString(),
-            log_message: logContent,
-            source: "user-input",
-            severity: "high"
+            timestamp: new Date(formData.timestamp).toISOString(),
+            log_message: formData.log_message,
+            source: formData.source,
+            severity: formData.severity as any
           }
         ]
       });
-      setResult(response);
+      setResult(analysis);
+      setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.detail || err.message || 'Failed to analyze log');
+      setError(err.response?.data?.detail || err.message || 'Failed to ingest log');
     } finally {
       setIsLoading(false);
     }
   };
 
   const resetAndClose = () => {
-    setLogContent('');
+    setFormData({
+      log_message: '',
+      source: 'firewall',
+      severity: 'medium',
+      timestamp: new Date().toISOString().slice(0, 16)
+    });
     setResult(null);
     setError(null);
+    setSuccess(false);
     onClose();
   };
 
@@ -73,16 +98,54 @@ const IngestLogModal: React.FC<IngestLogModalProps> = ({ isOpen, onClose }) => {
 
         <div className="p-6 space-y-6">
           {!result ? (
-            <div className="space-y-4">
+            <form onSubmit={handleIngest} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted">Source</label>
+                  <input
+                    required
+                    type="text"
+                    className="input-field w-full"
+                    placeholder="e.g. firewall-01"
+                    value={formData.source}
+                    onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted">Severity</label>
+                  <select
+                    className="input-field w-full"
+                    value={formData.severity}
+                    onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted">Timestamp</label>
+                  <input
+                    required
+                    type="datetime-local"
+                    className="input-field w-full"
+                    value={formData.timestamp}
+                    onChange={(e) => setFormData({ ...formData, timestamp: e.target.value })}
+                  />
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2 text-muted-foreground">
-                  Security Log Events
+                  Log Message
                 </label>
                 <textarea
-                  value={logContent}
-                  onChange={(e) => setLogContent(e.target.value)}
+                  required
+                  value={formData.log_message}
+                  onChange={(e) => setFormData({ ...formData, log_message: e.target.value })}
                   placeholder="Paste your logs here..."
-                  className="w-full h-64 bg-background border border-card-border rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none"
+                  className="w-full h-48 bg-background border border-card-border rounded-lg p-4 font-mono text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all resize-none"
                   disabled={isLoading}
                 />
               </div>
@@ -94,26 +157,33 @@ const IngestLogModal: React.FC<IngestLogModalProps> = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
                 <button
-                  onClick={handleAnalyze}
-                  disabled={isLoading || !logContent.trim()}
-                  className="btn-primary px-8 py-3 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={resetAndClose}
+                  className="btn-secondary px-6 py-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading || !formData.log_message.trim()}
+                  className="btn-primary px-8 py-2 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Analyzing...
+                      Processing...
                     </>
                   ) : (
                     <>
                       <Brain className="w-5 h-5" />
-                      Analyze with AI
+                      Ingest & Analyze
                     </>
                   )}
                 </button>
               </div>
-            </div>
+            </form>
           ) : (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               {/* Hypotheses Section */}
