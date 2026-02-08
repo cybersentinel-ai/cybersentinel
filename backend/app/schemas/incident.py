@@ -19,6 +19,21 @@ class Incident(IncidentBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class EventItem(BaseModel):
+    timestamp: str
+    log_message: str
+    source: str
+    severity: str
+
+class IncidentAnalyzeRequest(BaseModel):
+    tenant_id: UUID
+    events: List[EventItem]
+
+class IncidentAnalyzeResponse(BaseModel):
+    incident_id: str
+    status: str
+    message: str
+
 class TimelineItem(BaseModel):
     id: UUID
     type: str  # 'hypothesis' or 'decision'

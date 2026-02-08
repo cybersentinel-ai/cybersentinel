@@ -33,7 +33,7 @@ class IncidentService:
                 type="hypothesis",
                 timestamp=h.created_at,
                 content=h.hypothesis_text,
-                metadata={"confidence": h.confidence, "reasoning": h.reasoning_summary}
+                metadata={"confidence": h.confidence, "threat_type": h.threat_type}
             ))
 
         for d in decisions:

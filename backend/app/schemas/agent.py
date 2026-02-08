@@ -22,6 +22,7 @@ class AgentDecisionBase(BaseModel):
     incident_id: UUID
     agent_type: str
     decision_payload: Dict[str, Any]
+    confidence: float = 1.0
     reasoning_summary: Optional[str] = None
 
 class AgentDecisionCreate(AgentDecisionBase):

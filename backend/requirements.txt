@@ -10,3 +10,4 @@ redis
 python-multipart
 python-dotenv
 uuid
+google-generativeai>=0.7.2

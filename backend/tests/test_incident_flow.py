@@ -18,17 +18,23 @@ async def test_incident_flow(client):
     assert log_res.status_code == 200
 
     # 3. Trigger Incident Analysis
-    # Mocking celery task to avoid needing a running worker for this test
-    with patch("app.api.router_incidents.analyze_incident_task.delay") as mock_task:
+    # Mocking background task to avoid needing actual analysis during this test
+    with patch("app.api.router_incidents.IncidentOrchestrator") as mock_orch_class:
+        mock_orch = mock_orch_class.return_value
+        # Use AsyncMock for async method
+        from unittest.mock import AsyncMock
+        mock_orch.process_incident = AsyncMock(return_value={"status": "success"})
+        
         inc_res = await client.post("/api/incidents/analyze", json={
             "tenant_id": tenant_id,
-            "title": "Suspected Port Scan",
-            "description": "Multiple ports scanned from single IP",
-            "status": "open"
+            "events": [
+                {"timestamp": "2024-05-20T10:00:00Z", "log_message": "Failed login", "source": "auth", "severity": "high"}
+            ]
         })
         assert inc_res.status_code == 200
-        incident_id = inc_res.json()["id"]
-        mock_task.assert_called_once_with(incident_id)
+        data = inc_res.json()
+        assert data["status"] == "processing"
+        incident_id = data["incident_id"]
 
     # 4. Get Timeline
     timeline_res = await client.get(f"/api/incidents/{incident_id}/timeline")
