@@ -16,8 +16,41 @@ export interface IngestLogRequest {
 }
 
 export interface AnalyzeIncidentRequest {
-  incidentId: string;
-  parameters?: Record<string, any>;
+  tenant_id: string;
+  events: {
+    timestamp: string;
+    log_message: string;
+    source: string;
+    severity: string;
+  }[];
+}
+
+export interface HypothesisData {
+  hypothesis_text: string;
+  confidence: number;
+  evidence: string[];
+  threat_type: string;
+}
+
+export interface ResponsePlanData {
+  actions: string[];
+  priority: string;
+  estimated_impact: string;
+  false_positive_risk: number;
+}
+
+export interface CriticReviewData {
+  approved: boolean;
+  concerns: string[];
+  revised_actions?: string[];
+}
+
+export interface AnalyzeIncidentResponse {
+  incident_id: string;
+  status: string;
+  hypotheses: HypothesisData[];
+  response_plan: ResponsePlanData;
+  critic_review: CriticReviewData;
 }
 
 export interface AdvanceAgentRequest {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { WebSocketManager } from '../services/websocket';
 import { Incident } from '../types/incident';
 
-const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const WS_BASE_URL = 'wss://cybersentinel-backend.onrender.com';
 
 export const useIncidentWebSocket = (tenantId: string) => {
   const [incident, setIncident] = useState<Incident | null>(null);

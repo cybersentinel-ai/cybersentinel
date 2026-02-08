@@ -6,9 +6,10 @@ import { Incident } from '../types/incident';
 interface DashboardProps {
   incidents: Incident[];
   loading: boolean;
+  onIngestClick: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ incidents, loading }) => {
+const Dashboard: React.FC<DashboardProps> = ({ incidents, loading, onIngestClick }) => {
   const navigate = useNavigate();
 
   const stats = [
@@ -26,7 +27,10 @@ const Dashboard: React.FC<DashboardProps> = ({ incidents, loading }) => {
           <p className="text-muted">Real-time monitoring and autonomous reasoning</p>
         </div>
         <div className="flex gap-3">
-          <button className="btn-secondary flex items-center gap-2">
+          <button 
+            className="btn-secondary flex items-center gap-2"
+            onClick={onIngestClick}
+          >
             <Database className="w-4 h-4" />
             Ingest Log
           </button>

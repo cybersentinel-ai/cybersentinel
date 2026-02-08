@@ -4,12 +4,13 @@ import {
   CreateTenantRequest, 
   IngestLogRequest, 
   AnalyzeIncidentRequest, 
+  AnalyzeIncidentResponse,
   AdvanceAgentRequest, 
   ReviewAgentRequest 
 } from '../types/api';
 import { Incident, AgentDecision } from '../types/incident';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = 'https://cybersentinel-backend.onrender.com';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -28,29 +29,29 @@ apiClient.interceptors.response.use(
 
 export const api = {
   createTenant: (data: CreateTenantRequest) => 
-    apiClient.post<Tenant>('/tenants', data).then(res => res.data),
+    apiClient.post<Tenant>('/api/tenants', data).then(res => res.data),
 
   getTenant: (tenantId: string) => 
-    apiClient.get<Tenant>(`/tenants/${tenantId}`).then(res => res.data),
+    apiClient.get<Tenant>(`/api/tenants/${tenantId}`).then(res => res.data),
 
   ingestLog: (tenantId: string, logData: IngestLogRequest) => 
-    apiClient.post(`/tenants/${tenantId}/logs`, logData).then(res => res.data),
+    apiClient.post(`/api/tenants/${tenantId}/logs`, logData).then(res => res.data),
 
-  analyzeIncident: (tenantId: string, data: AnalyzeIncidentRequest) => 
-    apiClient.post(`/tenants/${tenantId}/analyze`, data).then(res => res.data),
+  analyzeIncident: (data: AnalyzeIncidentRequest) => 
+    apiClient.post<AnalyzeIncidentResponse>('/api/incidents/analyze', data).then(res => res.data),
 
   getIncidentTimeline: (incidentId: string) => 
-    apiClient.get<AgentDecision[]>(`/incidents/${incidentId}/timeline`).then(res => res.data),
+    apiClient.get<AgentDecision[]>(`/api/incidents/${incidentId}/timeline`).then(res => res.data),
 
   getIncident: (incidentId: string) =>
-    apiClient.get<Incident>(`/incidents/${incidentId}`).then(res => res.data),
+    apiClient.get<Incident>(`/api/incidents/${incidentId}`).then(res => res.data),
     
   getIncidents: () =>
-    apiClient.get<Incident[]>('/incidents').then(res => res.data),
+    apiClient.get<Incident[]>('/api/incidents').then(res => res.data),
 
   advanceAgent: (data: AdvanceAgentRequest) => 
-    apiClient.post('/agents/advance', data).then(res => res.data),
+    apiClient.post('/api/agents/advance', data).then(res => res.data),
 
   reviewAgent: (data: ReviewAgentRequest) => 
-    apiClient.post('/agents/review', data).then(res => res.data),
+    apiClient.post('/api/agents/review', data).then(res => res.data),
 };
