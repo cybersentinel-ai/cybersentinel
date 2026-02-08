@@ -29,10 +29,17 @@ class IncidentAnalyzeRequest(BaseModel):
     tenant_id: UUID
     events: List[EventItem]
 
+class AnalysisResult(BaseModel):
+    threat_type: str
+    severity: str
+    description: str
+    recommended_actions: List[str]
+    confidence: float
+
 class IncidentAnalyzeResponse(BaseModel):
     incident_id: str
     status: str
-    message: str
+    analysis: AnalysisResult
 
 class TimelineItem(BaseModel):
     id: UUID

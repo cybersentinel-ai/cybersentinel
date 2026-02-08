@@ -52,6 +52,13 @@ class CritiqueResponse(BaseModel):
     concerns: List[str]
     revised_actions: Optional[List[str]] = None
 
+class AnalysisResult(BaseModel):
+    threat_type: str
+    severity: str
+    description: str
+    recommended_actions: List[str]
+    confidence: float
+
 class GeminiService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
@@ -229,6 +236,47 @@ class GeminiService:
         except Exception as e:
             logger.error(f"Error in critique_decision: {e}")
             return {"error": str(e), "approved": False, "concerns": ["Internal error"]}
+
+    async def analyze_events(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Analyze security events and provide a concise analysis.
+        """
+        prompt = (
+            "You are a cybersecurity expert. Analyze these security events and provide a concise analysis. "
+            "Return JSON with this structure:\n"
+            "{\n"
+            '  "threat_type": str (e.g., brute_force, malware, phishing, etc.),\n'
+            '  "severity": str (critical, high, medium, low),\n'
+            '  "description": str,\n'
+            '  "recommended_actions": [str],\n'
+            '  "confidence": float (0-1)\n'
+            "}\n\n"
+            f"Security Events: {json.dumps(events)}"
+        )
+        
+        try:
+            response_text = await self._generate_content(prompt)
+            data = json.loads(response_text)
+            validated = AnalysisResult(**data)
+            return validated.model_dump()
+        except (json.JSONDecodeError, ValidationError) as e:
+            logger.error(f"Malformed response in analyze_events: {e}")
+            return {
+                "threat_type": "unknown",
+                "severity": "medium",
+                "description": f"Malformed response from AI: {str(e)}",
+                "recommended_actions": ["Investigate manually"],
+                "confidence": 0.0
+            }
+        except Exception as e:
+            logger.error(f"Error in analyze_events: {e}")
+            return {
+                "threat_type": "unknown",
+                "severity": "medium",
+                "description": f"Error during analysis: {str(e)}",
+                "recommended_actions": ["Investigate manually"],
+                "confidence": 0.0
+            }
 
     async def generate_structured(self, prompt: str, schema: Dict[str, Any]) -> Dict[str, Any]:
         """

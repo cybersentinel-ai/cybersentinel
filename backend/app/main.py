@@ -46,11 +46,12 @@ app.include_router(router_logs.router, prefix=settings.API_V1_STR)
 app.include_router(router_incidents.router, prefix=settings.API_V1_STR)
 app.include_router(router_agents.router, prefix=settings.API_V1_STR)
 
-# Initialize database on startup (For dev purposes, normally use Alembic)
 @app.on_event("startup")
 async def startup():
-    # Database tables will be created automatically by SQLAlchemy when the first request comes in
-    # async with engine.begin() as conn:
-    #     # await conn.run_sync(Base.metadata.drop_all) # Uncomment to reset
-    #     await conn.run_sync(Base.metadata.create_all)
-    logger.info("Application startup complete - database will connect on first request")
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("✅ Database tables created/verified successfully")
+    except Exception as e:
+        logger.warning(f"⚠️ Database initialization failed: {e}")
+        logger.info("Application will continue - database will connect on first request")
