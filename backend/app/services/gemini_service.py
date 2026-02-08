@@ -66,18 +66,22 @@ class GeminiService:
         if self.api_key:
             genai.configure(api_key=self.api_key)
             
-        self.model_name = "gemini-1.5-pro"
+        self.model_name = 'gemini-1.5-pro'
         self.max_retries = 3
         self.timeout = 30
-        self._model = None
+        self._model_instance = None
 
     @property
     def model(self):
-        if self._model is None:
+        if self._model_instance is None:
             if not self.api_key:
                 logger.error("GEMINI_API_KEY is required but not set.")
                 raise ValueError("GEMINI_API_KEY is required but not set.")
-            self._model = genai.GenerativeModel(
+            
+            # Re-configure to be sure
+            genai.configure(api_key=self.api_key)
+            
+            self._model_instance = genai.GenerativeModel(
                 model_name=self.model_name,
                 generation_config={
                     "temperature": 0.7,
@@ -85,7 +89,7 @@ class GeminiService:
                     "response_mime_type": "application/json",
                 }
             )
-        return self._model
+        return self._model_instance
 
     async def _generate_content(self, prompt: str) -> str:
         """Helper for API calls with retries and timeout."""
@@ -101,7 +105,12 @@ class GeminiService:
                     timeout=self.timeout
                 )
                 
-                response_text = response.text
+                if hasattr(response, 'text'):
+                    response_text = response.text
+                else:
+                    # Fallback if text attribute is missing for some reason
+                    response_text = str(response)
+
                 logger.info(f"Received response from Gemini API: {response_text[:200]}...")
                 return response_text
                 
@@ -150,7 +159,17 @@ class GeminiService:
         
         try:
             response_text = await self._generate_content(prompt)
-            data = json.loads(response_text)
+            # Clean up potentially markdown-wrapped JSON
+            cleaned_text = response_text.strip()
+            if cleaned_text.startswith("```json"):
+                cleaned_text = cleaned_text[7:]
+            if cleaned_text.startswith("```"):
+                cleaned_text = cleaned_text[3:]
+            if cleaned_text.endswith("```"):
+                cleaned_text = cleaned_text[:-3]
+            cleaned_text = cleaned_text.strip()
+            
+            data = json.loads(cleaned_text)
             validated = HypothesisResponse(**data)
             return validated.model_dump()
         except (json.JSONDecodeError, ValidationError) as e:
@@ -194,7 +213,17 @@ class GeminiService:
         
         try:
             response_text = await self._generate_content(prompt)
-            data = json.loads(response_text)
+            # Clean up potentially markdown-wrapped JSON
+            cleaned_text = response_text.strip()
+            if cleaned_text.startswith("```json"):
+                cleaned_text = cleaned_text[7:]
+            if cleaned_text.startswith("```"):
+                cleaned_text = cleaned_text[3:]
+            if cleaned_text.endswith("```"):
+                cleaned_text = cleaned_text[:-3]
+            cleaned_text = cleaned_text.strip()
+            
+            data = json.loads(cleaned_text)
             validated = ResponsePlan(**data)
             return validated.model_dump()
         except (json.JSONDecodeError, ValidationError) as e:
@@ -227,7 +256,17 @@ class GeminiService:
         
         try:
             response_text = await self._generate_content(prompt)
-            data = json.loads(response_text)
+            # Clean up potentially markdown-wrapped JSON
+            cleaned_text = response_text.strip()
+            if cleaned_text.startswith("```json"):
+                cleaned_text = cleaned_text[7:]
+            if cleaned_text.startswith("```"):
+                cleaned_text = cleaned_text[3:]
+            if cleaned_text.endswith("```"):
+                cleaned_text = cleaned_text[:-3]
+            cleaned_text = cleaned_text.strip()
+            
+            data = json.loads(cleaned_text)
             validated = CritiqueResponse(**data)
             return validated.model_dump()
         except (json.JSONDecodeError, ValidationError) as e:
@@ -284,8 +323,20 @@ class GeminiService:
         """
         full_prompt = f"{prompt}\n\nReturn valid JSON matching this schema: {json.dumps(schema)}"
         try:
+            # Re-configure the model with schema if needed, but for now we rely on the prompt and response_mime_type
             response_text = await self._generate_content(full_prompt)
-            return json.loads(response_text)
+            
+            # Clean up the response text if it contains markdown code blocks
+            cleaned_text = response_text.strip()
+            if cleaned_text.startswith("```json"):
+                cleaned_text = cleaned_text[7:]
+            if cleaned_text.startswith("```"):
+                cleaned_text = cleaned_text[3:]
+            if cleaned_text.endswith("```"):
+                cleaned_text = cleaned_text[:-3]
+            cleaned_text = cleaned_text.strip()
+            
+            return json.loads(cleaned_text)
         except Exception as e:
             logger.error(f"Error in generate_structured: {e}")
             return {"error": str(e)}

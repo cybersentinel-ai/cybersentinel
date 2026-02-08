@@ -23,7 +23,14 @@ async def test_incident_flow(client):
         mock_orch = mock_orch_class.return_value
         # Use AsyncMock for async method
         from unittest.mock import AsyncMock
-        mock_orch.process_incident = AsyncMock(return_value={"status": "success"})
+        mock_orch.process_incident = AsyncMock(return_value={
+            "incident_id": "test-id",
+            "status": "completed",
+            "hypotheses": [],
+            "response_plan": {},
+            "critic_review": {},
+            "final_decision": {}
+        })
         
         inc_res = await client.post("/api/incidents/analyze", json={
             "tenant_id": tenant_id,
@@ -33,8 +40,12 @@ async def test_incident_flow(client):
         })
         assert inc_res.status_code == 200
         data = inc_res.json()
-        assert data["status"] == "processing"
+        assert data["status"] == "completed"
         incident_id = data["incident_id"]
+        assert "hypotheses" in data
+        assert "response_plan" in data
+        assert "critic_review" in data
+        assert "final_decision" in data
 
     # 4. Get Timeline
     timeline_res = await client.get(f"/api/incidents/{incident_id}/timeline")

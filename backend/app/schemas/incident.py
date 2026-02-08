@@ -39,7 +39,10 @@ class AnalysisResult(BaseModel):
 class IncidentAnalyzeResponse(BaseModel):
     incident_id: str
     status: str
-    analysis: AnalysisResult
+    hypotheses: List[dict]
+    response_plan: dict
+    critic_review: dict
+    final_decision: dict
 
 class TimelineItem(BaseModel):
     id: UUID

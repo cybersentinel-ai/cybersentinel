@@ -48,10 +48,13 @@ app.include_router(router_agents.router, prefix=settings.API_V1_STR)
 
 @app.on_event("startup")
 async def startup():
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("✅ Database tables created/verified successfully")
-    except Exception as e:
-        logger.warning(f"⚠️ Database initialization failed: {e}")
-        logger.info("Application will continue - database will connect on first request")
+    if settings.DATABASE_URL.startswith("postgresql"):
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("✅ Database tables created/verified successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Database initialization failed: {e}")
+            logger.info("Application will continue - database will connect on first request")
+    else:
+        logger.info("Skipping database initialization (not using PostgreSQL)")
